@@ -24,6 +24,9 @@ class Process(Thread):
             print(self.getName() + " Loop: " + str(loop))
             sleep(1)
 
+            if loop == 1 and self.getName() == "P0":
+                Token = self.com.sendToken("P1")
+
             if self.getName() == "P0" and loop == 1:
                 self.com.broadcast("Hello")
                 self.com.sendTo("Hello", "P1")

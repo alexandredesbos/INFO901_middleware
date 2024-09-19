@@ -13,6 +13,7 @@ class Com(Thread):
         self.process = process
         self.nbProcess = nbProcess
         self.myId = process.getName()
+        # self.myId = int(self.name[1])
         waiting = False
 
         # Inscription au bus d'événements
@@ -54,24 +55,30 @@ class Com(Thread):
             print(self.myId + " received: " + message.payload, "from", message.src)
 
 
+    def sendToken(self, dest):
+        self.inc_clock()
+        message = Token(self.myId, None, dest, self.get_clock())
+        PyBus.Instance().post(message)
+        print(self.myId + " send token to", dest)
+
     def RequestSC(self):
         pass
 
     def nextHolder(self):
-        #calcule le prochain holder du token
-        pass
-
+        self.myId = (self.myId + 1) % self.nbProcess
+        return self.myId
+    
     @subscribe(threadMode=Mode.PARALLEL, onEvent=Token)
-    def recev(self, message):
-        if waiting:
+    def recevToken(self, message):
+        if message.dest == self.myId:
             self.inc_clock()
             self.mailbox.append(message)
-            print(self.myId + " received: " + message.payload, "from", message.src)
-            waiting = False
-            self.semaphore.release()
-        else:
-            self.inc_clock()
-            self.mailbox.append(message)
-            
+            print(self.myId + " received token from", message.src)
+
+        self.sendToken(self.nextHolder())
+
+           
+    
+
 
 
