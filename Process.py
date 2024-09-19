@@ -3,20 +3,16 @@ from threading import Lock, Thread
 from time import sleep
 
 from Com import Com
-from Message import Message
 
 class Process(Thread):
     
     def __init__(self,name, nbProcess):
         Thread.__init__(self)
 
-        self.com = Com()
-        
-        self.nbProcess = self.com.getNbProcess()
+        self.name = name
+        self.com = Com(self)
 
-        self.myId = self.com.getMyId()
         self.setName(name)
-        self.nbProcess = nbProcess
 
 
         self.alive = True
@@ -28,10 +24,21 @@ class Process(Thread):
         while self.alive:
             print(self.getName() + " Loop: " + str(loop))
             sleep(1)
+            
+            if loop == 2:
+                if self.getName() == "P0":
+                    self.com.broadcast("Message de P0 à tout le monde")
+
         
 
-            if self.getName() == "P0":
-                self.com.sendTo("j'appelle 2 et je te recontacte après", 1)
+
+
+
+
+
+
+            # if self.getName() == "P0":
+            #     self.com.sendTo("j'appelle 2 et je te recontacte après", 1)
                 
             #     self.com.sendToSync("J'ai laissé un message à 2, je le rappellerai après, on se sychronise tous et on attaque la partie ?", 2)
             #     self.com.recevFromSync(msg, 2)
@@ -41,9 +48,9 @@ class Process(Thread):
             #     self.com.synchronize()
                     
             #     self.com.requestSC()
-                if self.com.mailbox.isEmpty():
-                    print("Catched !")
-                    self.com.broadcast("J'ai gagné !!!")
+            #     if self.com.mailbox.isEmpty():
+            #         print("Catched !")
+            #         self.com.broadcast("J'ai gagné !!!")
             #     else:
             #         msg = self.com.mailbox.getMsg()
             #         print(str(msg.getSender())+" à eu le jeton en premier")

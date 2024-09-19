@@ -1,41 +1,57 @@
-from Message import *
 import threading
-
+from time import sleep
 from pyeventbus3.pyeventbus3 import *
+from Message import Message, BroadcastMessage
 
-class Com():
-    def __init__(self):
-        self.nbProcess = 3
-        self.myId = 0
-        self.lamportClock = 0
-        self.semaphore = threading.Semaphore()
-        self.mailbox = []
 
-    def setlamportClock(self,lamportClock):
-        self.lamportClock = lamportClock
+class Com(Thread):
+    def __init__(self, process):
+        self.clock = 0 
+        self.semaphore = threading.Semaphore() # Semaphore pour la gestion des accès concurrents à l'horloge
+        self.mailbox = [] 
+        self.owner = process.name # Le processus qui utilise cette instance de Com
+        self.process = process 
 
-    def getNbProcess(self):
-        return self.nbProcess
-    
-    def getMyId(self): 
-        return self.myId
+        PyBus.Instance().register(self, self)
 
-    def getlamportClock(self):
-        return self.lamportClock
-    
-    def incrementLamportClock(self):
+    def inc_clock(self):
         with self.semaphore:
-            self.lamportClock += 1
-        return self.lamportClock
+            self.clock += 1
+            return self.clock
+        
+    def get_clock(self):
+        return self.clock
     
-    def Broadcast(self, payload):
-        self.incrementLamportClock()
-        return BroadcastMessage(self.lamportClock, payload, self.myId)
-    
-    def sendTo(self, payload, receiver):
-        self.incrementLamportClock()
-        print("Envoi de message à "+str(receiver))
-        return Message(self.lamportClock, payload)
-    
-    def broadcast(self, payload):
-        self.mailbox.append(self.Broadcast(payload))
+    def getFirstMessage(self) -> Message:
+        return self.mailbox.pop(0)
+
+    def __addMessageToMailbox(self, msg: Message):
+        self.mailbox.append(msg)
+
+    def broadcast(self, payload: object):
+        """
+        Envoie un message à tous les autres processus via le bus d'événements
+        """
+        self.inc_clock()
+
+        message = BroadcastMessage(src=self.owner, payload=payload, stamp=self.clock)
+
+        print(f"Process {self.owner} envoie un message broadcasté : {message.payload}")
+        PyBus.Instance().post(message)
+
+    @subscribe(threadMode=Mode.PARALLEL, onEvent=BroadcastMessage)
+    def onBroadcast(self, event):
+        """
+        Lire un message broadcasté sur le bus
+        """
+        if event.src != self.owner:
+            sleep(1)
+            if self.clock > event.stamp:
+                self.inc_clock()
+            else:
+                self.clock = event.stamp
+
+            self.__addMessageToMailbox(event)
+            
+            print(f"Process {self.owner} a reçu un message broadcasté : {event.payload}")
+            sleep(1)

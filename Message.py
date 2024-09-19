@@ -1,40 +1,16 @@
-class Message:
-    def __init__(self, timestamp, payload):
-        self.timestamp = timestamp  # Horloge de Lamport
-        self.payload = payload      # Contenu du message (payload)
+from abc import ABC
 
-    def getTimestamp(self):
-        return self.timestamp
 
-    def getPayload(self):
-        return self.payload
+class Message(ABC):
+    def __init__(self, src=None, payload=None, dest=None, stamp=None):
+        self.src = src # Le processus qui envoie le message
+        self.payload = payload # Le contenu du message
+        self.dest = dest # Le processus destinataire
+        self.stamp = stamp # L'horloge de Lamport au moment de l'envoi
 
 class BroadcastMessage(Message):
-    def __init__(self, timestamp, payload, sender):
-        super().__init__(timestamp, payload)
-        self.sender = sender
+    def __init__(self, src, payload, stamp):
+        super().__init__(src=src, payload=payload, stamp=stamp)
 
-    def getSender(self):
-        return self.sender
 
-class MessageTo(Message):
-    def __init__(self, timestamp, payload, sender, receiver):
-        super().__init__(timestamp, payload)
-        self.sender = sender
-        self.receiver = receiver
 
-    def getSender(self):
-        return self.sender
-    def getReceiver(self):
-        return self.receiver
-    
-    
-class Token:
-    def __init__(self, holder_id):
-        self.holder_id = holder_id
-
-    def getHolder(self):
-        return self.holder_id
-
-    def setHolder(self, holder_id):
-        self.holder_id = holder_id
