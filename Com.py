@@ -2,127 +2,143 @@ import threading
 from time import sleep
 from pyeventbus3.pyeventbus3 import *
 from Message import Message, BroadcastMessage, MessageTo, Token
-class Com(Thread):
-    def __init__(self, process, has_Token=False):
-        Thread.__init__(self)
 
+class Com(Thread):
+    def __init__(self, process):
+        Thread.__init__(self)
         self.clock = 0
         self.semaphore = threading.Semaphore()
         self.mailbox = []
         self.process = process
         self.owner = process.name
-        self.waiting_for_token = False
-        self.token_condition = threading.Condition() 
-        self.token = Token(holder_id=self.owner) if has_Token else Token(holder_id=None)
+        self.token = None  # Initialise sans jeton
+        self.has_token = False  # Indique si le processus possède le jeton
+        self.requesting_sc = False
+        self.request_queue = []  # File d'attente des demandes de SC
+        self.lock = threading.Lock()  # Pour protéger l'accès aux ressources critiques
+        self.token_thread = threading.Thread(target=self.token_manager)
+        self.token_thread.start()
 
 
+        # Inscription au bus d'événements
         PyBus.Instance().register(self, self)
 
     def inc_clock(self):
         with self.semaphore:
             self.clock += 1
             return self.clock
-        
+
     def get_clock(self):
         return self.clock
-    
+
     def getFirstMessage(self) -> Message:
-        return self.mailbox.pop(0)
+        if self.mailbox:
+            return self.mailbox.pop(0)
+        else:
+            return None
 
     def addMessageToMailbox(self, msg: Message):
-        self.mailbox.append(msg)
-
-    # Envoie un message à tous les autres processus via le bus d'événements
-    def broadcast(self, payload: object):
+        with self.semaphore:
+            self.mailbox.append(msg)
         
+    def isMailboxEmpty(self):
+        return len(self.mailbox) == 0
+
+    def broadcast(self, payload: object):
         self.inc_clock()
-
         message = BroadcastMessage(src=self.owner, payload=payload, stamp=self.clock)
-
         print(f"Process {self.owner} envoie un message broadcasté : {message.payload}")
         PyBus.Instance().post(message)
 
     @subscribe(threadMode=Mode.PARALLEL, onEvent=BroadcastMessage)
     def onBroadcast(self, event):
-    
-        # Si le message n'a pas été envoyé par ce processus
         if event.src != self.owner:
             sleep(1)
-            if self.clock > event.stamp:
-                self.inc_clock()
-            else:
-                self.clock = event.stamp
-
+            with self.semaphore:
+                if self.clock > event.stamp:
+                    self.inc_clock()
+                else:
+                    self.clock = event.stamp
             self.addMessageToMailbox(event)
-            
             print(f"Process {self.owner} a reçu un message broadcasté : {self.getFirstMessage().payload}")
             sleep(1)
 
-
-
     def sendTo(self, payload, to):
         self.inc_clock()
-        messageTo = MessageTo(self.clock, payload, self.owner, to)
-
-        print(f"Process {self.owner} envoie un message à {to} : {messageTo.payload} "
-              f"avec timestamp {messageTo.stamp} de {messageTo.src}")
-
-    
+        messageTo = MessageTo(src=self.owner, dest=to, payload=payload, stamp=self.clock)
+        print(f"Process {self.owner} envoie un message à {to} : {messageTo.payload}")
         PyBus.Instance().post(messageTo)
 
-    # Méthode appelée lors de la réception d'un message dédié
     @subscribe(threadMode=Mode.PARALLEL, onEvent=MessageTo)
     def onMessageTo(self, event):
-        if event.getReceiver() == self.owner:
-            if self.clock > event.stamp:
-                self.inc_clock()
-            else:
-                self.clock = event.stamp
+        if event.dest == self.owner:
+            sleep(1)
+            with self.semaphore:
+                if self.clock > event.stamp:
+                    self.inc_clock()
+                else:
+                    self.clock = event.stamp
             self.addMessageToMailbox(event)
+            print(f"Process {self.owner} a reçu un message de {event.src} : {self.getFirstMessage().payload}")
+            sleep(1)
 
 
     def requestSC(self):
-        """
-        Demande l'accès à la section critique. Bloque jusqu'à l'obtention du jeton.
-        """
-        with self.token_condition:
-            self.waiting_for_token = True
-            print(f"{self.owner} demande la section critique.")
-
-            while self.token.getHolder() != self.owner:
-                self.token_condition.wait()
-            print(f"{self.owner} a obtenu la section critique.")
+        """Méthode pour demander la section critique."""
+        self.lock.acquire()
+        self.requesting_sc = True
+        if self.has_token:
+            # Si on possède le jeton, on peut entrer directement en section critique
+            self.enter_critical_section()
+        else:
+            # Sinon, on envoie une demande de SC
+            self.send_request_for_token()
+        self.lock.release()
 
     def releaseSC(self):
-        """
-        Libère la section critique et passe le jeton au prochain processus dans l'anneau.
-        """
-        with self.token_condition:
-            print(f"{self.owner} libère la section critique et passe le jeton.")
-            self.token.setHolder(self.get_next_process()) 
-            self.token_condition.notify_all()
+        """Méthode pour libérer la section critique."""
+        self.lock.acquire()
+        self.requesting_sc = False
+        if self.has_token:
+            self.pass_token_to_next()
+        self.lock.release()
 
-            token_message = Token(token=self.token)
-            PyBus.Instance().post(token_message)
+    def enter_critical_section(self):
+        """Entrer en section critique."""
+        print(f"Process {self.owner} est dans la section critique.")
+        # Simuler la section critique
+        time.sleep(2)  # Simuler du travail
+        print(f"Process {self.owner} quitte la section critique.")
+        self.releaseSC()
 
-    def get_next_process(self):
-        """
-        Détermine le processus suivant dans l'anneau.
-        À implémenter selon la logique de l'anneau.
-        """
+    def send_request_for_token(self):
+        """Envoyer une demande pour obtenir le jeton."""
+        print(f"Process {self.owner} demande le jeton.")
+        # Ajoute la demande à la file d'attente
+        self.request_queue.append(self.owner)
+        # Ici, tu devras envoyer un message aux autres processus pour demander le jeton
 
-        process_list = ["P0", "P1", "P2"]
-        current_index = process_list.index(self.owner)
-        next_index = (current_index + 1) % len(process_list)
-        return process_list[next_index]
+    def pass_token_to_next(self):
+        """Passer le jeton au prochain processus qui le demande."""
+        if self.request_queue:
+            next_process = self.request_queue.pop(0)
+            print(f"Process {self.owner} passe le jeton au Process {next_process}.")
+            self.has_token = False
+            # Envoie le jeton au processus suivant
+            self.send_token_to_process(next_process)
 
-    @subscribe(threadMode=Mode.PARALLEL, onEvent=Token)
-    def onTokenMessage(self, event):
-        """
-        Réception d'un message contenant le jeton.
-        """
-        if event.token.getHolder() == self.owner:
-            with self.token_condition:
-                self.token = event.token
-                print(f"{self.owner} a reçu le jeton.")
-                self.token_condition.notify_all()
+    def send_token_to_process(self, owner):
+        """Méthode pour envoyer le jeton à un autre processus."""
+        token_message = Token(sender=self.owner, receiver=owner)
+        # Ici, il faut envoyer le message via les mécanismes de communication du middleware
+        print(f"Envoi du jeton à Process {owner}")
+
+    def token_manager(self):
+        """Thread pour gérer la réception du jeton."""
+        while True:
+            # Ici, on attend de recevoir le jeton
+            # Simuler la réception d'un jeton
+            time.sleep(5)  # Simuler une attente
+            self.has_token = True  # Pour l'exemple, on simule la réception du jeton
+            if self.requesting_sc:
+                self.enter_critical_section()
