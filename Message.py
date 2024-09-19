@@ -13,4 +13,13 @@ class BroadcastMessage(Message):
         super().__init__(src=src, payload=payload, stamp=stamp)
 
 
-
+class MessageTo(Message):
+    def __init__(self, timestamp, payload, sender, receiver):
+        super().__init__(src=sender, payload=payload, stamp=timestamp)
+        self.receiver = receiver  # Destinataire
+    
+    def getSender(self):
+        return self.src 
+    
+    def getReceiver(self):
+        return self.receiver
