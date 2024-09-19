@@ -34,7 +34,8 @@ class Process(Thread):
         
             # Exemple d'utilisation de sendTo
             if loop == 2 and self.name == "P0":
-                self.com.sendTo("Bonjour","P1")
+                self.com.sendTo("Hello","P1")
+
             if loop == 4 and self.name == "P1":
                 if len(self.com.mailbox) > 0:
                     print(f"Message reçu par {self.name} : {self.com.getFirstMessage().payload}")
@@ -44,11 +45,7 @@ class Process(Thread):
 
 
 
-
-
-
-
-            # if self.getName() == "P0":
+            if self.getName() == "P0":
             #     self.com.sendTo("j'appelle 2 et je te recontacte après", 1)
                 
             #     self.com.sendToSync("J'ai laissé un message à 2, je le rappellerai après, on se sychronise tous et on attaque la partie ?", 2)
@@ -58,14 +55,15 @@ class Process(Thread):
                     
             #     self.com.synchronize()
                     
-            #     self.com.requestSC()
-            #     if self.com.mailbox.isEmpty():
-            #         print("Catched !")
-            #         self.com.broadcast("J'ai gagné !!!")
-            #     else:
-            #         msg = self.com.mailbox.getMsg()
-            #         print(str(msg.getSender())+" à eu le jeton en premier")
-            #     self.com.releaseSC()
+                self.com.requestSC()
+                if self.com.mailbox.isEmpty():
+                    print("Catched !")
+                    self.com.broadcast("J'ai gagné !!!")
+                else:
+                    print("J'ai pas eu le jeton")
+                    msg = self.com.mailbox.getMsg()
+                    print(str(msg.getSender())+" à eu le jeton en premier")
+                self.com.releaseSC()
 
 
             # if self.getName() == "P1":
