@@ -30,6 +30,13 @@ class Process(Thread):
                 t = Token("P1")
                 self.com.sendTokenTo(t)
 
+            if loop == 2 and self.name == "P1":
+                self.com.requestSC()
+                self.com.releaseSC()
+
+            if loop == 2 and self.name == "P2":
+                self.com.requestSC()
+                self.com.releaseSC()
 
 
             # if self.getName() == "P0":

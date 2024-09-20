@@ -80,7 +80,7 @@ class Com(Thread):
 
 
     # Gestion du jeton
-    def requestToken(self):
+    def requestSC(self):
         self.process.state = State.REQUEST
         print(f"{self.owner} veut entrer en SC.")
 
@@ -88,7 +88,7 @@ class Com(Thread):
             sleep(1)
 
 
-    def releaseToken(self):
+    def releaseSC(self):
         self.process.state = State.RELEASE
         print(f"{self.owner} libère le jeton.")
 
