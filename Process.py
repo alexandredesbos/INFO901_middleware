@@ -3,16 +3,17 @@ from threading import Lock, Thread
 from time import sleep
 
 from Com import Com
+from Message import Token
 
 class Process(Thread):
     
     def __init__(self, name, nbProcess):
         Thread.__init__(self)
 
-        self.setName(name)
-        self.com = Com(self, nbProcess)
-    
         self.nbProcess = nbProcess
+        self.name = name
+        self.com = Com(self)
+        self.setName(name)
 
         self.alive = True
         self.start()
@@ -23,13 +24,12 @@ class Process(Thread):
         while self.alive:
             print(self.getName() + " Loop: " + str(loop))
             sleep(1)
+        
+            # Lance le token a l'initialisation
+            if loop == 0 and self.name == "P0":
+                t = Token("P1")
+                self.com.sendTokenTo(t)
 
-            if loop == 1 and self.getName() == "P0":
-                Token = self.com.sendToken("P1")
-
-            if self.getName() == "P0" and loop == 1:
-                self.com.broadcast("Hello")
-                self.com.sendTo("Hello", "P1")
 
 
             # if self.getName() == "P0":
@@ -93,4 +93,3 @@ class Process(Thread):
 
     def waitStopped(self):
         self.join()
-
