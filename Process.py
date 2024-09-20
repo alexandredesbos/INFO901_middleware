@@ -38,67 +38,18 @@ class Process(Thread):
             #     self.com.requestSC()
             #     self.com.releaseSC()
 
-            if loop == 2 and self.name == "P1":
-                self.com.synchronize()
-
-            if loop == 4 and self.name == "P2":
-                self.com.synchronize()
-
-            if loop == 3 and self.name == "P0":
-                self.com.synchronize()
-
-
-            # if self.getName() == "P0":
-            #     self.com.sendTo("j'appelle 2 et je te recontacte après", 1)
-                
-            #     self.com.sendToSync("J'ai laissé un message à 2, je le rappellerai après, on se sychronise tous et on attaque la partie ?", 2)
-            #     self.com.recevFromSync(msg, 2)
-               
-            #     self.com.sendToSync("2 est OK pour jouer, on se synchronise et c'est parti!",1)
-                    
+            # if loop == 2 and self.name == "P1":
             #     self.com.synchronize()
-                    
-            #     self.com.requestSC()
-            #     if self.com.mailbox.isEmpty():
-            #         print("Catched !")
-            #         self.com.broadcast("J'ai gagné !!!")
-            #     else:
-            #         msg = self.com.mailbox.getMsg()
-            #         print(str(msg.getSender())+" à eu le jeton en premier")
-            #     self.com.releaseSC()
 
-
-            # if self.getName() == "P1":
-            #     if not self.com.mailbox.isEmpty():
-            #         self.com.mailbox.getMessage()
-            #         self.com.recevFromSync(msg, 0)
-
-            #         self.com.synchronize()
-                    
-            #         self.com.requestSC()
-            #         if self.com.mailbox.isEmpty():
-            #             print("Catched !")
-            #             self.com.broadcast("J'ai gagné !!!")
-            #         else:
-            #             msg = self.com.mailbox.getMsg()
-            #             print(str(msg.getSender())+" à eu le jeton en premier")
-            #         self.com.releaseSC()
-                    
-            # if self.getName() == "P2":
-            #     self.com.recevFromSync(msg, 0)
-            #     self.com.sendToSync("OK", 0)
-
+            # if loop == 4 and self.name == "P2":
             #     self.com.synchronize()
-                    
-            #     self.com.requestSC()
-            #     if self.com.mailbox.isEmpty():
-            #         print("Catched !")
-            #         self.com.broadcast("J'ai gagné !!!")
-            #     else:
-            #         msg = self.com.mailbox.getMsg()
-            #         print(str(msg.getSender())+" à eu le jeton en premier")
-            #     self.com.releaseSC()
-                
+
+            # if loop == 3 and self.name == "P0":
+            #     self.com.synchronize()
+
+            if loop == 1 and self.name == "P0":
+                payload = f"Message synchronisé de {self.name}"
+                self.com.broadcastSync(payload, from_id="P0")
 
             loop+=1
         print(self.getName() + " stopped")

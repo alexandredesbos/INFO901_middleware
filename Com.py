@@ -36,6 +36,9 @@ class Com(Thread):
     def addMessageToMailbox(self, msg: Message):
         self.mailbox.append(msg)
 
+    def isMailboxEmpty(self):
+        return len(self.mailbox) == 0
+
 
     def broadcast(self, payload: object):
         
@@ -144,4 +147,19 @@ class Com(Thread):
             sleep(1)
             self.cptSync += 1
 
+    def broadcastSync(self, payload: object, from_id: str):
+        self.inc_clock()
+        if self.owner == from_id:
+            message = BroadcastMessage(src=self.owner, payload=payload, stamp=self.clock)
+            print(f"Process {self.owner} envoie un message broadcasté synchronisé : {message.payload}")
+            PyBus.Instance().post(message)
 
+
+        else:
+            while self.isMailboxEmpty():
+                sleep(1)
+            msg = self.getFirstMessage()
+            if isinstance(msg, BroadcastMessage) and msg.src == from_id:
+                print(f"Process {self.owner} a reçu un message broadcasté synchronisé : {msg.payload}")
+                self.cptSync += 1
+    
