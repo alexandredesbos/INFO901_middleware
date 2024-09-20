@@ -12,6 +12,7 @@ class Com(Thread):
         self.mailbox = []
         self.process = process
         self.owner = process.name
+        self.cptSync = 0
 
         self.nbProcess = process.nbProcess
 
@@ -120,3 +121,27 @@ class Com(Thread):
             nextProcess = "P" + str(nextProcessNumber)
             self.sendTokenTo(Token(nextProcess))
             self.process.state = State.NONE
+
+
+    #« synchronize() » qui attend que tous les processus aient invoqué cette méthode pour tous les débloquer.
+    def synchronize(self):
+        messageSync = SyncMessage(self.owner, self.clock)
+
+        print(f"{self.owner} En attente de synchronisation.")
+        PyBus.Instance().post(messageSync)
+
+        while self.cptSync < self.nbProcess - 1:
+            sleep(1)
+
+        # reset cptSync
+        print(f"{self.owner} est synchronisé.")
+        self.cptSync = 0
+
+
+    @subscribe(threadMode=Mode.PARALLEL, onEvent=SyncMessage)
+    def on_sync(self, event):
+        if event.src != self.owner:
+            sleep(1)
+            self.cptSync += 1
+
+

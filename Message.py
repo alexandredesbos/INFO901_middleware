@@ -33,3 +33,7 @@ class State:
     REQUEST = 1
     SC = 2
     RELEASE = 3
+
+class SyncMessage(Message):
+    def __init__(self, src, stamp):
+        super().__init__(src=src, stamp=stamp)
