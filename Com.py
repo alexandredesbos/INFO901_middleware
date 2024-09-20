@@ -16,6 +16,9 @@ class Com(Thread):
 
         self.nbProcess = process.nbProcess
 
+        self.local_counter = 0
+        self.assigned_ids = []
+
         # Gestion du Token
         self.token = Token(self.owner) if has_token else None 
         self.process.state = State.NONE
@@ -162,4 +165,28 @@ class Com(Thread):
             if isinstance(msg, BroadcastMessage) and msg.src == from_id:
                 print(f"Process {self.owner} a reçu un message broadcasté synchronisé : {msg.payload}")
                 self.cptSync += 1
+
+    def sendToSync(self, payload: object, dest: str):
+        self.inc_clock()
+        message = MessageTo(self.clock, payload, self.owner, dest)
+        print(f"Process {self.owner} envoie un message synchronisé à {dest}: {message.payload}")
+        PyBus.Instance().post(message)
+
+
+    def receiveFromSync(self, from_id: str):
+        print(f"Process {self.owner} attend un message de {from_id}...")
+        while self.isMailboxEmpty():
+            sleep(0.1)
+
+        msg = self.getFirstMessage()
+        if isinstance(msg, MessageTo) and msg.src == from_id:
+            print(f"Process {self.owner} a reçu un message synchronisé de {from_id}: {msg.payload}")
+
+
+    def assign_unique_id(self):
+        assigned_id = self.local_counter
+        self.local_counter += 1
+        self.assigned_ids.append(assigned_id)
+        return assigned_id
+
     

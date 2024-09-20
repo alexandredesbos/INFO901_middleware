@@ -51,6 +51,14 @@ class Process(Thread):
                 payload = f"Message synchronisé de {self.name}"
                 self.com.broadcastSync(payload, from_id="P0")
 
+
+            if loop == 2:
+                if self.name == "P0":
+                    payload = f"Message direct de {self.name} à P1"
+                    self.com.sendToSync(payload, dest="P1")
+                elif self.name == "P1":
+                    self.com.receiveFromSync(from_id="P0")
+
             loop+=1
         print(self.getName() + " stopped")
 
