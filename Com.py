@@ -44,6 +44,11 @@ class Com(Thread):
 
 
     def broadcast(self, payload: object):
+        """
+        Envoie un message broadcasté à tous les processus
+        Args:
+            payload (object): Le contenu du message
+        """
         
         self.inc_clock()
         message = BroadcastMessage(src=self.owner, payload=payload, stamp=self.clock)
@@ -53,6 +58,11 @@ class Com(Thread):
 
     @subscribe(threadMode=Mode.PARALLEL, onEvent=BroadcastMessage)
     def onBroadcast(self, event):
+        """
+        Recoit un message broadcasté
+        Args:
+            event (BroadcastMessage): Le message broadcasté
+        """
     
         if event.src != self.owner:
             sleep(1)
@@ -68,6 +78,12 @@ class Com(Thread):
 
 
     def sendTo(self, payload, to):
+        """
+        Envoie un message à un processus
+        Args:
+            payload (object): Le contenu du message
+            to (str): Le destinataire
+        """
         self.inc_clock()
         messageTo = MessageTo(self.clock, payload, self.owner, to) 
 
@@ -78,6 +94,11 @@ class Com(Thread):
 
     @subscribe(threadMode=Mode.PARALLEL, onEvent=MessageTo)
     def onMessageTo(self, event):
+        """
+        Recoit un message
+        Args:
+            event (MessageTo): Le message reçu
+        """
         if event.getReceiver() == self.owner:
             if self.clock > event.stamp:
                 self.inc_clock()
@@ -88,6 +109,11 @@ class Com(Thread):
 
     # Gestion du jeton
     def requestSC(self):
+        """
+        Demande d'entrer en section critique
+        args:
+            token (Token): Le jeton
+        """
         self.process.state = State.REQUEST
         print(f"{self.owner} veut entrer en SC.")
 
@@ -96,6 +122,9 @@ class Com(Thread):
 
 
     def releaseSC(self):
+        """
+        Libère la section critique
+        """
         self.process.state = State.RELEASE
         print(f"{self.owner} libère le jeton.")
 
@@ -106,6 +135,11 @@ class Com(Thread):
 
     @subscribe(threadMode=Mode.PARALLEL, onEvent=Token)
     def on_token(self, event):
+        """
+        Recoit le jeton
+        Args:
+            event (Token): Le jeton
+        """
         if self.owner == event.dest and self.process.alive:
             sleep(1)
             print(f"{self.owner} a le jeton.")
@@ -131,6 +165,11 @@ class Com(Thread):
 
     #« synchronize() » qui attend que tous les processus aient invoqué cette méthode pour tous les débloquer.
     def synchronize(self):
+        """
+        Synchronise les processus
+        args:
+            nbProcess (int): Le nombre de processus
+        """
         messageSync = SyncMessage(self.owner, self.clock)
 
         print(f"{self.owner} En attente de synchronisation.")
@@ -151,6 +190,12 @@ class Com(Thread):
             self.cptSync += 1
 
     def broadcastSync(self, payload: object, from_id: str):
+        """
+        Envoie un message broadcasté synchronisé
+        Args:
+            payload (object): Le contenu du message
+            from_id (str): L'identifiant du processus qui envoie le message
+        """
         self.inc_clock()
         if self.owner == from_id:
             message = BroadcastMessage(src=self.owner, payload=payload, stamp=self.clock)
@@ -167,6 +212,12 @@ class Com(Thread):
                 self.cptSync += 1
 
     def sendToSync(self, payload: object, dest: str):
+        """
+        Envoie un message synchronisé
+        Args:
+            payload (object): Le contenu du message
+            dest (str): Le destinataire
+        """
         self.inc_clock()
         message = MessageTo(self.clock, payload, self.owner, dest)
         print(f"Process {self.owner} envoie un message synchronisé à {dest}: {message.payload}")
@@ -174,6 +225,11 @@ class Com(Thread):
 
 
     def receiveFromSync(self, from_id: str):
+        """
+        Recoit un message synchronisé
+        Args:
+            from_id (str): L'identifiant du processus qui envoie le message
+        """
         print(f"Process {self.owner} attend un message de {from_id}...")
         while self.isMailboxEmpty():
             sleep(0.1)
@@ -188,5 +244,6 @@ class Com(Thread):
         self.local_counter += 1
         self.assigned_ids.append(assigned_id)
         return assigned_id
+
 
     

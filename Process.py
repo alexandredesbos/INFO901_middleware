@@ -13,6 +13,7 @@ class Process(Thread):
         self.nbProcess = nbProcess
         self.name = name
         self.com = Com(self)
+        self.id = self.com.assign_unique_id()
         self.setName(name)
 
         self.alive = True
@@ -26,26 +27,26 @@ class Process(Thread):
             sleep(1)
         
             # Lance le token a l'initialisation
-            # if loop == 0 and self.name == "P0":
-            #     t = Token("P1")
-            #     self.com.sendTokenTo(t)
+            if loop == 0 and self.name == "P0":
+                t = Token("P1")
+                self.com.sendTokenTo(t)
 
-            # if loop == 2 and self.name == "P1":
-            #     self.com.requestSC()
-            #     self.com.releaseSC()
+            if loop == 2 and self.name == "P1":
+                self.com.requestSC()
+                self.com.releaseSC()
 
-            # if loop == 2 and self.name == "P2":
-            #     self.com.requestSC()
-            #     self.com.releaseSC()
+            if loop == 2 and self.name == "P2":
+                self.com.requestSC()
+                self.com.releaseSC()
 
-            # if loop == 2 and self.name == "P1":
-            #     self.com.synchronize()
+            if loop == 2 and self.name == "P1":
+                self.com.synchronize()
 
-            # if loop == 4 and self.name == "P2":
-            #     self.com.synchronize()
+            if loop == 4 and self.name == "P2":
+                self.com.synchronize()
 
-            # if loop == 3 and self.name == "P0":
-            #     self.com.synchronize()
+            if loop == 3 and self.name == "P0":
+                self.com.synchronize()
 
             if loop == 1 and self.name == "P0":
                 payload = f"Message synchronisé de {self.name}"
@@ -58,6 +59,9 @@ class Process(Thread):
                     self.com.sendToSync(payload, dest="P1")
                 elif self.name == "P1":
                     self.com.receiveFromSync(from_id="P0")
+
+
+         
 
             loop+=1
         print(self.getName() + " stopped")
